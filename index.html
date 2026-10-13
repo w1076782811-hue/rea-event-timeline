@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>REA 社交事件发酵时间线（2026年10月）</title>
+<style>
+  :root {
+    --bg: #07090f;
+    --bg2: #0d111a;
+    --panel: #121826;
+    --panel-hover: #182033;
+    --line: #2a3550;
+    --accent: #6c8cff;
+    --accent2: #a78bfa;
+    --cyan: #22d3ee;
+    --pink: #f472b6;
+    --green: #34d399;
+    --orange: #fb923c;
+    --red: #f87171;
+    --text: #e8edf7;
+    --muted: #93a0b8;
+    --soft: #c5cee0;
+    --shadow: 0 18px 50px rgba(0,0,0,.45);
+    --radius: 18px;
+    --max: 1080px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC",
+      "Noto Sans SC", "Microsoft YaHei", "WenQuanYi Micro Hei",
+      system-ui, -apple-system, sans-serif;
+    background:
+      radial-gradient(1200px 600px at 10% -10%, rgba(108,140,255,.18), transparent 55%),
+      radial-gradient(900px 500px at 90% 0%, rgba(167,139,250,.14), transparent 50%),
+      radial-gradient(800px 400px at 50% 100%, rgba(34,211,238,.08), transparent 55%),
+      var(--bg);
+    color: var(--text);
+    line-height: 1.65;
+    min-height: 100vh;
+  }
+
+  /* progress bar */
+  #progress {
+    position: fixed; top: 0; left: 0; height: 3px; width: 0;
+    background: linear-gradient(90deg, var(--accent), var(--cyan), var(--accent2));
+    z-index: 1000; box-shadow: 0 0 12px rgba(108,140,255,.6);
+  }
+
+  /* header */
+  .hero {
+    max-width: var(--max);
+    margin: 0 auto;
+    padding: 56px 24px 28px;
+    text-align: center;
+  }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 14px; border-radius: 999px;
+    background: rgba(108,140,255,.12);
+    border: 1px solid rgba(108,140,255,.35);
+    color: var(--soft); font-size: 13px; letter-spacing: .04em;
+    margin-bottom: 18px;
+  }
+  .eyebrow .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--cyan); box-shadow: 0 0 10px var(--cyan);
+  }
+  h1 {
+    margin: 0 0 12px;
+    font-size: clamp(1.6rem, 3.6vw, 2.45rem);
+    font-weight: 780;
+    letter-spacing: .02em;
+    background: linear-gradient(120deg, #fff 10%, #b8c7ff 45%, #a5f3fc 90%);
+    -webkit-background-clip: text; background-clip: text;
+    color: transparent;
+  }
+  .subtitle {
+    margin: 0 auto 22px;
+    max-width: 720px;
+    color: var(--muted);
+    font-size: clamp(0.98rem, 1.8vw, 1.12rem);
+  }
+  .meta-row {
+    display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;
+    margin-bottom: 22px;
+  }
+  .chip {
+    font-size: 12px; color: var(--soft);
+    padding: 5px 12px; border-radius: 999px;
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.08);
+  }
+
+  /* top nav */
+  .nav-wrap {
+    position: sticky; top: 0; z-index: 50;
+    backdrop-filter: blur(14px);
+    background: rgba(7,9,15,.72);
+    border-bottom: 1px solid rgba(255,255,255,.06);
+  }
+  .nav {
+    max-width: var(--max);
+    margin: 0 auto;
+    padding: 10px 16px;
+    display: flex; gap: 8px; overflow-x: auto;
+    scrollbar-width: thin;
+  }
+  .nav a {
+    flex: 0 0 auto;
+    text-decoration: none;
+    color: var(--muted);
+    font-size: 12.5px;
+    padding: 7px 12px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    transition: .2s ease;
+    white-space: nowrap;
+  }
+  .nav a:hover, .nav a.active {
+    color: #fff;
+    background: rgba(108,140,255,.16);
+    border-color: rgba(108,140,255,.4);
+  }
+
+  /* timeline */
+  .timeline {
+    max-width: var(--max);
+    margin: 0 auto;
+    padding: 36px 24px 80px;
+    position: relative;
+  }
+  .timeline::before {
+    content: "";
+    position: absolute;
+    left: 50%; transform: translateX(-50%);
+    top: 0; bottom: 40px;
+    width: 3px;
+    background: linear-gradient(180deg,
+      rgba(108,140,255,.15),
+      rgba(108,140,255,.55),
+      rgba(34,211,238,.45),
+      rgba(167,139,250,.2));
+    border-radius: 3px;
+  }
+
+  .node {
+    position: relative;
+    width: calc(50% - 36px);
+    margin-bottom: 42px;
+    opacity: 0;
+    transform: translateY(28px);
+    transition: opacity .55s ease, transform .55s ease;
+  }
+  .node.visible { opacity: 1; transform: translateY(0); }
+  .node:nth-child(odd) { margin-left: 0; }
+  .node:nth-child(even) { margin-left: calc(50% + 36px); }
+
+  .node .marker {
+    position: absolute;
+    top: 28px;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: var(--bg);
+    border: 3px solid var(--accent);
+    box-shadow: 0 0 0 6px rgba(108,140,255,.15), 0 0 18px rgba(108,140,255,.45);
+    z-index: 2;
+  }
+  .node:nth-child(odd) .marker { right: -45px; }
+  .node:nth-child(even) .marker { left: -45px; }
+
+  .card {
+    background: linear-gradient(180deg, var(--panel), var(--bg2));
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color .2s, transform .2s, background .2s;
+  }
+  .card:hover {
+    border-color: rgba(108,140,255,.45);
+    transform: translateY(-2px);
+    background: linear-gradient(180deg, var(--panel-hover), var(--bg2));
+  }
+  .card.open { border-color: rgba(108,140,255,.55); }
+
+  .card-head {
+    padding: 18px 20px 14px;
+    display: flex; gap: 12px; align-items: flex-start;
+  }
+  .idx {
+    flex: 0 0 auto;
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    display: grid; place-items: center;
+    font-weight: 700; font-size: 14px;
+    background: rgba(108,140,255,.18);
+    color: #c7d4ff;
+    border: 1px solid rgba(108,140,255,.35);
+  }
+  .card-head h2 {
+    margin: 0 0 6px;
+    font-size: 1.05rem;
+    line-height: 1.4;
+    font-weight: 700;
+  }
+  .date {
+    display: inline-block;
+    font-size: 12px;
+    color: var(--cyan);
+    background: rgba(34,211,238,.1);
+    border: 1px solid rgba(34,211,238,.25);
+    padding: 2px 8px;
+    border-radius: 999px;
+    margin-bottom: 6px;
+  }
+  .summary {
+    margin: 0;
+    color: var(--soft);
+    font-size: .95rem;
+  }
+  .toggle {
+    margin-left: auto;
+    color: var(--muted);
+    font-size: 12px;
+    white-space: nowrap;
+    padding-top: 6px;
+  }
+  .toggle span { color: var(--accent); }
+
+  .card-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height .45s ease;
+  }
+  .card.open .card-body { max-height: 6200px; }
+  .media-embed {
+    margin: 14px 0 16px;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,.1);
+    background: #0a0c12;
+  }
+  .media-embed .embed-label {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .04em;
+    color: #c7d4ff;
+    padding: 10px 14px 0;
+  }
+  .media-embed .ratio {
+    position: relative;
+    width: 100%;
+    padding-top: 56.25%;
+    background: #000;
+  }
+  .media-embed .ratio iframe {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    border: 0;
+  }
+  .media-embed .embed-fallback {
+    display: block;
+    padding: 10px 14px 14px;
+    color: #9ec1ff;
+    font-size: .86rem;
+    word-break: break-all;
+  }
+  .tweet-embed {
+    margin: 14px 0 16px;
+    padding: 12px;
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,.1);
+    background: #0a0c12;
+  }
+  .tweet-embed .embed-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: #c7d4ff;
+    margin-bottom: 8px;
+  }
+  .tweet-embed iframe {
+    width: 100%;
+    min-height: 520px;
+    border: 0;
+    border-radius: 10px;
+    background: #000;
+  }
+  .card-body-inner {
+    padding: 0 20px 20px;
+    border-top: 1px solid rgba(255,255,255,.06);
+  }
+
+  .story-blocks {
+    display: flex; flex-direction: column; gap: 10px;
+    margin: 16px 0 4px;
+  }
+  .process, .ending {
+    padding: 12px 14px;
+    border-radius: 12px;
+    font-size: .9rem;
+    color: var(--soft);
+    line-height: 1.6;
+  }
+  .process {
+    background: rgba(108,140,255,.09);
+    border: 1px solid rgba(108,140,255,.28);
+    border-left: 3px solid var(--accent);
+  }
+  .ending {
+    background: rgba(52,211,153,.07);
+    border: 1px solid rgba(52,211,153,.25);
+    border-left: 3px solid var(--green);
+  }
+  .process .label, .ending .label {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    padding: 2px 8px;
+    border-radius: 999px;
+    margin-bottom: 6px;
+  }
+  .process .label {
+    color: #c7d4ff;
+    background: rgba(108,140,255,.2);
+    border: 1px solid rgba(108,140,255,.35);
+  }
+  .ending .label {
+    color: #a7f3d0;
+    background: rgba(52,211,153,.16);
+    border: 1px solid rgba(52,211,153,.35);
+  }
+  .process p, .ending p {
+    margin: 0;
+  }
+  .shot {
+    margin: 16px 0 14px;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,.08);
+    background: #000;
+  }
+  .shot img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  .note {
+    font-size: .88rem;
+    color: var(--muted);
+    margin: 0 0 12px;
+    padding: 10px 12px;
+    border-left: 3px solid var(--accent2);
+    background: rgba(167,139,250,.08);
+    border-radius: 0 10px 10px 0;
+  }
+  .links {
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .links a {
+    color: #9ec1ff;
+    text-decoration: none;
+    font-size: .88rem;
+    word-break: break-all;
+    padding: 8px 12px;
+    border-radius: 10px;
+    background: rgba(108,140,255,.08);
+    border: 1px solid rgba(108,140,255,.18);
+    transition: .15s;
+  }
+  .links a:hover {
+    background: rgba(108,140,255,.18);
+    color: #fff;
+  }
+  .tag-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+  .tag {
+    font-size: 11px; color: var(--muted);
+    padding: 3px 8px; border-radius: 6px;
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.07);
+  }
+
+  /* accent variants */
+  .node[data-tone="green"] .marker { border-color: var(--green); box-shadow: 0 0 0 6px rgba(52,211,153,.12), 0 0 18px rgba(52,211,153,.35); }
+  .node[data-tone="green"] .idx { background: rgba(52,211,153,.15); border-color: rgba(52,211,153,.4); color: #a7f3d0; }
+  .node[data-tone="pink"] .marker { border-color: var(--pink); box-shadow: 0 0 0 6px rgba(244,114,182,.12), 0 0 18px rgba(244,114,182,.35); }
+  .node[data-tone="pink"] .idx { background: rgba(244,114,182,.15); border-color: rgba(244,114,182,.4); color: #fbcfe8; }
+  .node[data-tone="orange"] .marker { border-color: var(--orange); box-shadow: 0 0 0 6px rgba(251,146,60,.12), 0 0 18px rgba(251,146,60,.35); }
+  .node[data-tone="orange"] .idx { background: rgba(251,146,60,.15); border-color: rgba(251,146,60,.4); color: #fed7aa; }
+  .node[data-tone="red"] .marker { border-color: var(--red); box-shadow: 0 0 0 6px rgba(248,113,113,.12), 0 0 18px rgba(248,113,113,.35); }
+  .node[data-tone="red"] .idx { background: rgba(248,113,113,.15); border-color: rgba(248,113,113,.4); color: #fecaca; }
+  .node[data-tone="cyan"] .marker { border-color: var(--cyan); box-shadow: 0 0 0 6px rgba(34,211,238,.12), 0 0 18px rgba(34,211,238,.35); }
+  .node[data-tone="cyan"] .idx { background: rgba(34,211,238,.15); border-color: rgba(34,211,238,.4); color: #a5f3fc; }
+  .node[data-tone="violet"] .marker { border-color: var(--accent2); box-shadow: 0 0 0 6px rgba(167,139,250,.12), 0 0 18px rgba(167,139,250,.35); }
+  .node[data-tone="violet"] .idx { background: rgba(167,139,250,.15); border-color: rgba(167,139,250,.4); color: #ddd6fe; }
+
+  footer.disclaimer {
+    max-width: var(--max);
+    margin: 0 auto 48px;
+    padding: 18px 22px;
+    border-radius: 14px;
+    border: 1px solid rgba(248,113,113,.25);
+    background: rgba(248,113,113,.07);
+    color: #fecaca;
+    font-size: .9rem;
+    text-align: center;
+  }
+  footer.disclaimer strong { color: #fff; }
+
+  .controls {
+    text-align: center;
+    margin: 8px 0 28px;
+  }
+  .controls button {
+    appearance: none; border: 1px solid rgba(108,140,255,.4);
+    background: rgba(108,140,255,.12); color: #dbe4ff;
+    padding: 8px 16px; border-radius: 999px; cursor: pointer;
+    font: inherit; font-size: 13px; margin: 0 4px;
+  }
+  .controls button:hover { background: rgba(108,140,255,.22); }
+
+  @media (max-width: 860px) {
+    .timeline::before { left: 18px; transform: none; }
+    .node, .node:nth-child(even) {
+      width: calc(100% - 42px);
+      margin-left: 42px;
+    }
+    .node .marker,
+    .node:nth-child(odd) .marker,
+    .node:nth-child(even) .marker {
+      left: -33px; right: auto;
+    }
+    .hero { padding-top: 36px; }
+  }
+</style>
+</head>
+<body>
+<div id="progress"></div>
+
+<header class="hero">
+  <div class="eyebrow"><span class="dot"></span>课程分享 · 舆论时间线 · 2026年10月</div>
+  <h1>REA 社交事件发酵时间线（2026年10月）</h1>
+  <p class="subtitle">从 Trending 到「软件已死」再到封号预警——舆论如何一周叠爆</p>
+  <div class="meta-row">
+    <span class="chip">10 个节点</span>
+    <span class="chip">纯本地 HTML · 可离线打开</span>
+    <span class="chip">点击节点展开原文链接与示意截图</span>
+  </div>
+  <div class="controls">
+    <button type="button" id="expandAll">全部展开</button>
+    <button type="button" id="collapseAll">全部收起</button>
+  </div>
+</header>
+
+<nav class="nav-wrap" aria-label="节点跳转">
+  <div class="nav" id="topNav">
+    <a href="#n1">01 Trending</a>
+    <a href="#n2">02 Berman</a>
+    <a href="#n3">03 反编译器</a>
+    <a href="#n4">04 软件已死</a>
+    <a href="#n5">05 中文刷屏</a>
+    <a href="#n6">06 YouTube</a>
+    <a href="#n7">07 误绑 Adobe</a>
+    <a href="#n8">08 HN 争论</a>
+    <a href="#n9">09 封号预警</a>
+    <a href="#n10">10 官方案例</a>
+  </div>
+</nav>
+
+<main class="timeline" id="timeline">
+
+  <article class="node" id="n1" data-tone="green">
+    <div class="marker" aria-hidden="true"></div>
+    <div class="card" tabindex="0" role="button" aria-expanded="false">
+      <div class="card-head">
+        <div class="idx">01</div>
+        <div>
+          <div class="date">约 10/6–8</div>
+          <h2>GitHub Trending 冲榜</h2>
+          <p class="summary">REA 仓库登上 Trending，Star 快速攀升；社交开始出现「逆向一切」讨论。</p>
+        </div>
+        <div class="toggle">点击展开 <span>▾</span></div>
+      </div>
+      <div class="card-body">
+        <div class="card-body-inner">
+          <div class="story-blocks">
+          <div class="process">
+            <div class="label">发生过程</div>
+            <p>REA（morluto/rea）进入 GitHub Trending；Star 与讨论快速上升；官网 rea.tools 与「Agent + 逆向工具」叙事开始被转发。</p>
+          </div>
+          <div class="ending">
+            <div class="label">结束</div>
+            <p>话题从「又一个开源工具」升级为「值得追的 Trending 事件」，为英文大 V 口号帖铺好注意力。</p>
+          </div>
+        </div>
+          <div class="shot"><img src="images/node-01.png" alt="节点1：GitHub Trending 中文示意卡" loading="lazy" /></div>
+          <div class="links">
+            <a href="https://github.com/morluto/rea" target="_blank" rel="noopener noreferrer">GitHub：https://github.com/morluto/rea</a>
+            <a href="https://rea.tools/" target="_blank" rel="noopener noreferrer">官网：https://rea.tools/</a>
+          </div>
+          <div class="tag-row">
+            <span class="tag">起点</span><span class="tag">开源曝光</span><span class="tag">Star 攀升</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </article>
+
+  <article class="node" id="n2" data-tone="cyan">
+    <div class="marker" aria-hidden="true"></div>
+    <div class="card" tabindex="0" role="button" aria-expanded="false">
+      <div class="card-head">
+        <div class="idx">02</div>
+        <div>
+          <div class="date">10/8</div>
+          <h2>Matthew Berman「Software is done」引爆英文圈</h2>
+          <p class="summary">「软件写完了 / Reverse Engineer Anything」类表述点燃英文社交讨论；@MatthewBerman 帖成为关键引爆点之一。</p>
+        </div>
+        <div class="toggle">点击展开 <span>▾</span></div>
+      </div>
+      <div class="card-body">
+        <div class="card-body-inner">
+          <div class="story-blocks">
+          <div class="process">
+            <div class="label">发生过程</div>
+            <p>@MatthewBerman 发短帖「Reverse Engineer Anything / Software is done」并配 REA 相关截图；英文圈大量引用、截图转发。</p>
+          </div>
+          <div class="ending">
+            <div class="label">结束</div>
+            <p>口号成为本周主叙事标签；后续技术介绍帖与「软件已死」转发都围绕它展开。</p>
+          </div>
+        </div>
+          <div class="shot"><img src="images/node-02.png" alt="节点2：Matthew Berman 原帖截图" loading="lazy" /></div>
+          <div class="links">
+            <a href="https://x.com/MatthewBerman/status/2108245653843509415" target="_blank" rel="noopener noreferrer">原文：https://x.com/MatthewBerman/status/2108245653843509415</a>
+          </div>
+          <div class="tag-row">
+            <span class="tag">@MatthewBerman</span><span class="tag">英文圈</span><span class="tag">口号传播</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </article>
+
+  <article class="node" id="n3" data-tone="violet">
+    <div class="marker" aria-hidden="true"></div>
+    <div class="card" tabindex="0" role="button" aria-expanded="false">
+      <div class="card-head">
+        <div class="idx">03</div>
+        <div>
+          <div class="date">10/8</div>
+          <h2>技术向扩散（给 Agent 接上反编译器）</h2>
+          <p class="summary">有人把反编译器接到 Claude Code；REA 让编程 Agent 在无源码情况下调查应用，桥接 Ghidra / Hopper。</p>
+        </div>
+        <div class="toggle">点击展开 <span>▾</span></div>
+      </div>
+      <div class="card-body">
+        <div class="card-body-inner">
+          <div class="story-blocks">
+          <div class="process">
+            <div class="label">发生过程</div>
+            <p>技术博主解释 REA 把 Ghidra / Hopper 等接到 Claude Code 等 Agent；强调「无源码也能调查应用」。</p>
+          </div>
+          <div class="ending">
+            <div class="label">结束</div>
+            <p>把狂欢口号落到「MCP 桥接老工具」的技术框架，给后续理性读者提供解释模板。</p>
+          </div>
+        </div>
+          <div class="shot"><img src="images/node-03.png" alt="节点3：techNmak 原帖截图" loading="lazy" /></div>
+          <div class="links">
+            <a href="https://x.com/techNmak/status/2108431092462338178" target="_blank" rel="noopener noreferrer">原文：https://x.com/techNmak/status/2108431092462338178</a>
+          </div>
+          <div class="tag-row">
+            <span class="tag">Agent</span><span class="tag">Ghidra</span><span class="tag">Hopper</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </article>
+
+  <article class="node" id="n4" data-tone="pink">
+    <div class="marker" aria-hidden="true"></div>
+    <div class="card" tabindex="0" role="button" aria-expanded="false">
+      <div class="card-head">
+        <div class="idx">04</div>
+        <div>
+          <div class="date">10/8–10</div>
+          <h2>英文高曝光转发「Software is dead」</h2>
+          <p class="summary">GitHub 趋势第一；Agent 可不看源码搞清功能如何实现；口号「软件已死，软件万岁」。</p>
+        </div>
+        <div class="toggle">点击展开 <span>▾</span></div>
+      </div>
+      <div class="card-body">
+        <div class="card-body-inner">
+          <div class="story-blocks">
+          <div class="process">
+            <div class="label">发生过程</div>
+            <p>高曝光账号转发「GitHub No.1 + Agent 不看源码还原功能」；浏览 / 点赞量级放大英文圈。</p>
+          </div>
+          <div class="ending">
+            <div class="label">结束</div>
+            <p>口号从圈内热帖变成大众可见的「软件已死，软件万岁」模因，跨圈扩散基本完成。</p>
+          </div>
+        </div>
+          <div class="shot"><img src="images/node-04.png" alt="节点4：IntCyberDigest 原帖截图" loading="lazy" /></div>
+          <div class="links">
+            <a href="https://x.com/IntCyberDigest/status/2108699960782774733" target="_blank" rel="noopener noreferrer">原文：https://x.com/IntCyberDigest/status/2108699960782774733</a>
+          </div>
+          <div class="tag-row">
+            <span class="tag">高曝光</span><span class="tag">口号</span><span class="tag">转发链</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </article>
+
+  <article class="node" id="n5" data-tone="green">
+    <div class="marker" aria-hidden="true"></div>
+    <div class="card" tabindex="0" role="button" aria-expanded="false">
+      <div class="card-head">
+        <div class="idx">05</div>
+        <div>
+          <div class="date">10/8–10</div>
+          <h2>中文圈介绍帖刷屏</h2>
+          <p class="summary">nicekate：没有源码也能看懂 App？REA 爆火，把逆向交给 AI 智能体，本地运行、结论带证据。</p>
+        </div>
+        <div class="toggle">点击展开 <span>▾</span></div>
+      </div>
+      <div class="card-body">
+        <div class="card-body-inner">
+          <div class="story-blocks">
+          <div class="process">
+            <div class="label">发生过程</div>
+            <p>nicekate、liyue_ai 等中文介绍帖说明本地运行、多 Agent 适配、结论带证据；中文圈跟转上升。</p>
+          </div>
+          <div class="ending">
+            <div class="label">结束</div>
+            <p>中文用户基数接上英文叙事；同时为下一波「拿 Codex / Claude 实操」与封号讨论埋下用户。</p>
+          </div>
+        </div>
+          <div class="shot"><img src="images/node-05.png" alt="节点5：nicekate 原帖截图" loading="lazy" /></div>
+          <div class="tweet-embed">
+            <div class="embed-label">原帖视频（X 内嵌播放）</div>
+            <iframe title="nicekate REA 介绍视频" src="https://platform.twitter.com/embed/Tweet.html?id=2109132690318561516" loading="lazy" allowfullscreen allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"></iframe>
+            <a class="embed-fallback" href="https://x.com/nicekate8888/status/2109132690318561516/video/1" target="_blank" rel="noopener noreferrer">若内嵌无法播放，点此打开视频：https://x.com/nicekate8888/status/2109132690318561516/video/1</a>
+          </div>
+          <div class="links">
+            <a href="https://x.com/nicekate8888/status/2109132690318561516" target="_blank" rel="noopener noreferrer">nicekate：https://x.com/nicekate8888/status/2109132690318561516</a>
+            <a href="https://x.com/liyue_ai/status/2109504411198542060" target="_blank" rel="noopener noreferrer">相关：https://x.com/liyue_ai/status/2109504411198542060</a>
+          </div>
+          <div class="tag-row">
+            <span class="tag">中文圈</span><span class="tag">本地运行</span><span class="tag">证据链</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </article>
+
+  <article class="node" id="n6" data-tone="orange">
+    <div class="marker" aria-hidden="true"></div>
+    <div class="card" tabindex="0" role="button" aria-expanded="false">
+      <div class="card-head">
+        <div class="idx">06</div>
+        <div>
+          <div class="date">约 10/10</div>
+          <h2>YouTube「几分钟克隆软件」实操视频</h2>
+          <p class="summary">Eric Tech 等视频标题直球 Clone Any Software；口号代码不再是护城河；加速大众传播。</p>
+        </div>
+        <div class="toggle">点击展开 <span>▾</span></div>
+      </div>
+      <div class="card-body">
+        <div class="card-body-inner">
+          <div class="story-blocks">
+          <div class="process">
+            <div class="label">发生过程</div>
+            <p>Eric Tech 等视频用「几分钟克隆软件」标题演示 / 宣称实操；「代码不是护城河」话术进入视频平台。</p>
+          </div>
+          <div class="ending">
+            <div class="label">结束</div>
+            <p>非开发者听众也被卷入；夸大预期升温，随后与 Adobe 替代品新闻叠在一起更易误读。</p>
+          </div>
+        </div>
+          <div class="media-embed">
+            <div class="embed-label">YouTube 原视频（可直接播放）</div>
+            <div class="ratio">
+              <iframe title="How To Use REA To Clone Any Software In Minutes" src="https://www.youtube.com/embed/FnB9tHKBJXQ" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
+            </div>
+            <a class="embed-fallback" href="https://www.youtube.com/watch?v=FnB9tHKBJXQ" target="_blank" rel="noopener noreferrer">若内嵌无法播放，点此打开：https://www.youtube.com/watch?v=FnB9tHKBJXQ</a>
+          </div>
+          <p class="note">节点配图已改为上方 YouTube 内嵌播放窗；亦可对照官方案例页理解真实能力边界。</p>
+          <div class="links">
+            <a href="https://rea.tools/showcase/" target="_blank" rel="noopener noreferrer">官网案例：https://rea.tools/showcase/</a>
+          </div>
+          <div class="tag-row">
+            <span class="tag">视频传播</span><span class="tag">大众化</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </article>
+
+  <article class="node" id="n7" data-tone="orange">
+    <div class="marker" aria-hidden="true"></div>
+    <div class="card" tabindex="0" role="button" aria-expanded="false">
+      <div class="card-head">
+        <div class="idx">07</div>
+        <div>
+          <div class="date">同周</div>
+          <h2>与 ArtCraft / PhotoCraft「误绑 Adobe」</h2>
+          <p class="summary">同周 Adobe 系 AI 复刻项目刷屏，被误读为「REA 拆了 Adobe」。事实：ArtCraft 自称 clean-room，作者在 HN 明确禁止用 Ghidra / REA。</p>
+        </div>
+        <div class="toggle">点击展开 <span>▾</span></div>
+      </div>
+      <div class="card-body">
+        <div class="card-body-inner">
+          <div class="story-blocks">
+          <div class="process">
+            <div class="label">发生过程</div>
+            <p>同周 ArtCraft / PhotoCraft 等 AI 复刻 Adobe 系功能项目爆火，与 REA 同屏出现；社交把两件事拼成「REA 拆了 Adobe」。</p>
+          </div>
+          <div class="ending">
+            <div class="label">结束</div>
+            <p>澄清文与 HN 作者表态（clean-room、禁止 Ghidra / REA）把两项目拆开；误绑成为分享时必讲的「纠错点」。</p>
+          </div>
+        </div>
+          <div class="shot"><img src="images/node-07.png" alt="节点7：PhotoCraft / ArtCraft 页面截图" loading="lazy" /></div>
+          <div class="links">
+            <a href="https://github.com/storytold/photocraft" target="_blank" rel="noopener noreferrer">PhotoCraft：https://github.com/storytold/photocraft</a>
+            <a href="https://news.ycombinator.com/item?id=50028275" target="_blank" rel="noopener noreferrer">HN：https://news.ycombinator.com/item?id=50028275</a>
+            <a href="https://beating.news/flash/371359" target="_blank" rel="noopener noreferrer">澄清可读：https://beating.news/flash/371359</a>
+          </div>
+          <div class="tag-row">
+            <span class="tag">误读澄清</span><span class="tag">clean-room</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </article>
+
+  <article class="node" id="n8" data-tone="violet">
+    <div class="marker" aria-hidden="true"></div>
+    <div class="card" tabindex="0" role="button" aria-expanded="false">
+      <div class="card-head">
+        <div class="idx">08</div>
+        <div>
+          <div class="date">同期</div>
+          <h2>Hacker News 深度争论（约 794 分）</h2>
+          <p class="summary">爱好社群是否被稀释；REA 是否只是封装；ArtCraft 作者现身；fair use / IP 洗白争论。</p>
+        </div>
+        <div class="toggle">点击展开 <span>▾</span></div>
+      </div>
+      <div class="card-body">
+        <div class="card-body-inner">
+          <div class="story-blocks">
+          <div class="process">
+            <div class="label">发生过程</div>
+            <p>主帖冲高分（约 794）；评论争社群乐趣、工具价值、fair use、IP「洗白」、ArtCraft 作者现身。</p>
+          </div>
+          <div class="ending">
+            <div class="label">结束</div>
+            <p>阶段性收束：形成质量最高的英文长讨论场；未结案，但边界与法律张力被写进公共记录，供后续引用。</p>
+          </div>
+        </div>
+          <div class="shot"><img src="images/node-08.png" alt="节点8：Hacker News 争论示意卡" loading="lazy" /></div>
+          <div class="links">
+            <a href="https://news.ycombinator.com/item?id=50028275" target="_blank" rel="noopener noreferrer">HN 帖：https://news.ycombinator.com/item?id=50028275</a>
+          </div>
+          <div class="tag-row">
+            <span class="tag">~794 分</span><span class="tag">IP / fair use</span><span class="tag">社群争论</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </article>
+
+  <article class="node" id="n9" data-tone="red">
+    <div class="marker" aria-hidden="true"></div>
+    <div class="card" tabindex="0" role="button" aria-expanded="false">
+      <div class="card-head">
+        <div class="idx">09</div>
+        <div>
+          <div class="date">10/11–13</div>
+          <h2>中文区封号预警第二波</h2>
+          <p class="summary">Vincent：别随便用 Codex 做逆向，试 REA 后老号被封；有人建议国产模型；亦有玩笑「逆向 Claude 封号逻辑」。</p>
+        </div>
+        <div class="toggle">点击展开 <span>▾</span></div>
+      </div>
+      <div class="card-body">
+        <div class="card-body-inner">
+          <div class="story-blocks">
+          <div class="process">
+            <div class="label">发生过程</div>
+            <p>Vincent 等自述用 Codex 试 REA 后账号被封；有人建议换国产模型；玩笑帖调侃「逆向封号逻辑」；剪映等口头目标亦有流传。</p>
+          </div>
+          <div class="ending">
+            <div class="label">结束</div>
+            <p>阶段性收束：中文区第二波主情绪从狂欢转为风险提示；共识倾向「别用主号乱拆商业软件」——注意多为用户自述，非官方公告。</p>
+          </div>
+        </div>
+          <div class="shot"><img src="images/node-09.png" alt="节点9：Vincent 封号自述原帖截图" loading="lazy" /></div>
+          <p class="note">机制提示：更可能是内容策略 + ToS / 共享 OAuth，不是 REA MCP 本身「收费封号」。课程讨论请区分产品能力、平台政策与社区传言。</p>
+          <div class="links">
+            <a href="https://x.com/Vincent_AINotes/status/2109533044407439607" target="_blank" rel="noopener noreferrer">Vincent：https://x.com/Vincent_AINotes/status/2109533044407439607</a>
+            <a href="https://x.com/RohoQinAI/status/2109840617341911316" target="_blank" rel="noopener noreferrer">建议国产模型：https://x.com/RohoQinAI/status/2109840617341911316</a>
+            <a href="https://x.com/miles_mazy/status/2109632678299668816" target="_blank" rel="noopener noreferrer">玩笑帖：https://x.com/miles_mazy/status/2109632678299668816</a>
+          </div>
+          <div class="tag-row">
+            <span class="tag">封号预警</span><span class="tag">ToS</span><span class="tag">理性辨析</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </article>
+
+  <article class="node" id="n10" data-tone="cyan">
+    <div class="marker" aria-hidden="true"></div>
+    <div class="card" tabindex="0" role="button" aria-expanded="false">
+      <div class="card-head">
+        <div class="idx">10</div>
+        <div>
+          <div class="date">同期理性对照</div>
+          <h2>官方案例（计算器 % / Notion / 小恐龙等）</h2>
+          <p class="summary">官网 showcase 才是可信演示；不是一键整站克隆 Adobe。</p>
+        </div>
+        <div class="toggle">点击展开 <span>▾</span></div>
+      </div>
+      <div class="card-body">
+        <div class="card-body-inner">
+          <div class="story-blocks">
+          <div class="process">
+            <div class="label">发生过程</div>
+            <p>官网 showcase（计算器 %、Chrome 小恐龙、Notion IPC、DX-Ball、TH04 等）被理性用户用来对照夸张口号。</p>
+          </div>
+          <div class="ending">
+            <div class="label">结束</div>
+            <p>本轮舆论的「事实锚点」：REA 是可演示能力的桥，不是魔法一键克隆 Adobe；适合作为分享收束。</p>
+          </div>
+        </div>
+          <div class="shot"><img src="images/node-10.png" alt="节点10：REA 官网中文页截图" loading="lazy" /></div>
+          <div class="links">
+            <a href="https://rea.tools/showcase/" target="_blank" rel="noopener noreferrer">Showcase：https://rea.tools/showcase/</a>
+            <a href="https://rea.tools/zh-CN/" target="_blank" rel="noopener noreferrer">中文站：https://rea.tools/zh-CN/</a>
+          </div>
+          <div class="tag-row">
+            <span class="tag">官方对照</span><span class="tag">理性收束</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </article>
+
+</main>
+
+<footer class="disclaimer">
+  <strong>免责声明：</strong>仅作舆论梳理，不鼓励逆向商业软件；截图为中文还原示意卡，非平台官方授权转载。
+</footer>
+
+<script>
+(function () {
+  const progress = document.getElementById("progress");
+  const nodes = Array.from(document.querySelectorAll(".node"));
+  const navLinks = Array.from(document.querySelectorAll("#topNav a"));
+
+  function updateProgress() {
+    const doc = document.documentElement;
+    const max = doc.scrollHeight - window.innerHeight;
+    const p = max > 0 ? (window.scrollY / max) * 100 : 0;
+    progress.style.width = p + "%";
+  }
+
+  // scroll reveal
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((e) => {
+      if (e.isIntersecting) e.target.classList.add("visible");
+    });
+  }, { threshold: 0.18, rootMargin: "0px 0px -40px 0px" });
+  nodes.forEach((n) => io.observe(n));
+
+  // expand / collapse
+  function setOpen(card, open) {
+    card.classList.toggle("open", open);
+    card.setAttribute("aria-expanded", open ? "true" : "false");
+    const t = card.querySelector(".toggle");
+    if (t) t.innerHTML = open ? '收起 <span>▴</span>' : '点击展开 <span>▾</span>';
+  }
+
+  nodes.forEach((node) => {
+    const card = node.querySelector(".card");
+    card.addEventListener("click", (ev) => {
+      if (ev.target.closest("a")) return; // let links work
+      setOpen(card, !card.classList.contains("open"));
+    });
+    card.addEventListener("keydown", (ev) => {
+      if (ev.key === "Enter" || ev.key === " ") {
+        ev.preventDefault();
+        setOpen(card, !card.classList.contains("open"));
+      }
+    });
+  });
+
+  document.getElementById("expandAll").addEventListener("click", () => {
+    document.querySelectorAll(".card").forEach((c) => setOpen(c, true));
+  });
+  document.getElementById("collapseAll").addEventListener("click", () => {
+    document.querySelectorAll(".card").forEach((c) => setOpen(c, false));
+  });
+
+  // active nav on scroll
+  const sectionIo = new IntersectionObserver((entries) => {
+    entries.forEach((e) => {
+      if (!e.isIntersecting) return;
+      const id = e.target.id;
+      navLinks.forEach((a) => a.classList.toggle("active", a.getAttribute("href") === "#" + id));
+    });
+  }, { threshold: 0.45, rootMargin: "-20% 0px -45% 0px" });
+  nodes.forEach((n) => sectionIo.observe(n));
+
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  window.addEventListener("resize", updateProgress);
+  updateProgress();
+
+  // open hash target on load
+  if (location.hash) {
+    const el = document.querySelector(location.hash);
+    if (el) {
+      const card = el.querySelector(".card");
+      if (card) setOpen(card, true);
+      el.classList.add("visible");
+    }
+  }
+})();
+</script>
+</body>
+</html>
